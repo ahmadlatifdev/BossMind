@@ -1,0 +1,48 @@
+.content {
+  padding: 0 0 80px;
+}
+
+.body {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.updated {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.body h2 {
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-top: 36px;
+  margin-bottom: 12px;
+  color: var(--color-text-primary);
+}
+
+.body p {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.8;
+  margin-bottom: 16px;
+}
+
+.body ul {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.8;
+  margin-bottom: 16px;
+  padding-left: 24px;
+}
+
+.body li {
+  margin-bottom: 6px;
+}
+
+.body strong {
+  color: var(--color-gold);
+}

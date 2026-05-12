@@ -1,0 +1,24 @@
+{
+  "name": "bossmind-resumora",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Resumora — AI-powered luxury resume builder by BossMind",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "preflight": "node lib/preflight.js",
+    "validate": "npm run preflight && npm run lint && npm run build"
+  },
+  "dependencies": {
+    "@stripe/stripe-js": "^2.4.0",
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.0"
+  }
+}
