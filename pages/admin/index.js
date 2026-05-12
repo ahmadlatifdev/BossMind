@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import {
   PROJECTS,
@@ -8,10 +8,14 @@ import {
   getStatusColor,
   getActivityIcon,
 } from '@/lib/dashboard-data';
+import { ROUTE_MANIFEST, PUBLIC_ROUTES } from '@/lib/route-manifest';
 import s from '@/styles/Admin.module.css';
 
 const SIDEBAR_ITEMS = [
   { id: 'overview', icon: '◎', label: 'Global Overview' },
+  { id: 'ui-lock', icon: '🔒', label: 'Production UI Lock' },
+  { id: 'preview', icon: '◉', label: 'Live UI Preview' },
+  { id: 'preflight', icon: '✓', label: 'Preflight Scan' },
   { id: 'projects', icon: '◆', label: 'Project Panels' },
   { id: 'intelligence', icon: '◈', label: 'System Intelligence' },
   { id: 'controls', icon: '⚡', label: 'Master Controls' },
@@ -53,12 +57,6 @@ const CONTROL_ACTIONS = [
   { icon: '⏸', label: 'Emergency Freeze', action: 'freeze', danger: true },
 ];
 
-function formatTime(iso) {
-  try {
-    return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  } catch { return '--:--'; }
-}
-
 function MetricCell({ metric }) {
   const hasStatus = metric.status;
   const hasValue = metric.value !== undefined;
@@ -84,14 +82,54 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState('overview');
   const [activeProject, setActiveProject] = useState('resumora');
+  const [previewRoute, setPreviewRoute] = useState('/');
   const [now, setNow] = useState('');
   const [actionFeedback, setActionFeedback] = useState(null);
+  const [preflightResults, setPreflightResults] = useState(null);
+  const [routeChecks, setRouteChecks] = useState({});
 
   useEffect(() => {
     const update = () => setNow(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     update();
     const iv = setInterval(update, 1000);
     return () => clearInterval(iv);
+  }, []);
+
+  const runPreflight = useCallback(async () => {
+    setPreflightResults({ running: true });
+    const results = [];
+    const routes = Object.entries(ROUTE_MANIFEST.routes);
+    const checks = {};
+
+    for (const [routePath, meta] of routes) {
+      try {
+        const res = await fetch(routePath, { method: 'HEAD', redirect: 'follow' });
+        const owner = res.headers.get('X-Route-Owner') || meta.owner;
+        const lock = res.headers.get('X-UI-Lock') || 'unknown';
+        const ok = routePath === '/404' ? res.status === 404 || res.status === 200 : res.status === 200;
+        checks[routePath] = { status: res.status, ok, owner, lock };
+        results.push({ route: routePath, status: res.status, ok, owner: meta.owner, page: meta.page, lock });
+      } catch {
+        checks[routePath] = { status: 0, ok: false, owner: meta.owner, lock: 'error' };
+        results.push({ route: routePath, status: 0, ok: false, owner: meta.owner, page: meta.page, lock: 'error' });
+      }
+    }
+
+    try {
+      const apiRes = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planId: 'professional' }) });
+      results.push({ route: '/api/checkout', status: apiRes.status, ok: apiRes.ok, owner: 'resumora', page: 'pages/api/checkout.js', lock: 'production' });
+    } catch {
+      results.push({ route: '/api/checkout', status: 0, ok: false, owner: 'resumora', page: 'pages/api/checkout.js', lock: 'error' });
+    }
+
+    setRouteChecks(checks);
+    setPreflightResults({
+      running: false,
+      timestamp: new Date().toISOString(),
+      results,
+      passed: results.filter((r) => r.ok).length,
+      total: results.length,
+    });
   }, []);
 
   function handleControl(action) {
@@ -105,6 +143,7 @@ export default function AdminDashboard() {
   }
 
   const project = PROJECTS[activeProject];
+  const manifestRoutes = Object.entries(ROUTE_MANIFEST.routes);
 
   return (
     <>
@@ -185,49 +224,24 @@ export default function AdminDashboard() {
             {/* ===== GLOBAL OVERVIEW ===== */}
             <section id="overview">
               <div className={s.overviewGrid}>
-                <div className={s.overviewCard}>
-                  <div className={s.overviewLabel}>System Health</div>
-                  <div className={s.overviewValue}>{GLOBAL_METRICS.systemHealth}%</div>
-                  <div className={s.overviewSub}>Across all projects</div>
-                </div>
-                <div className={s.overviewCard}>
-                  <div className={s.overviewLabel}>Automation</div>
-                  <div className={s.overviewValue}>{GLOBAL_METRICS.automation}%</div>
-                  <div className={s.overviewSub}>Hands-free operations</div>
-                </div>
-                <div className={s.overviewCard}>
-                  <div className={s.overviewLabel}>Runtime Sync</div>
-                  <div className={s.overviewValue}>{GLOBAL_METRICS.runtimeSync}%</div>
-                  <div className={s.overviewSub}>Synchronization rate</div>
-                </div>
-                <div className={s.overviewCard}>
-                  <div className={s.overviewLabel}>Memory Integrity</div>
-                  <div className={s.overviewValue}>{GLOBAL_METRICS.memoryIntegrity}%</div>
-                  <div className={s.overviewSub}>Shared memory core</div>
-                </div>
-                <div className={s.overviewCard}>
-                  <div className={s.overviewLabel}>Auto Recovery</div>
-                  <div className={s.overviewValue}>{GLOBAL_METRICS.autoRecovery}%</div>
-                  <div className={s.overviewSub}>Self-healing uptime</div>
-                </div>
-                <div className={s.overviewCard}>
-                  <div className={s.overviewLabel}>Deploy Verification</div>
-                  <div className={s.overviewValue}>{GLOBAL_METRICS.deployVerification}%</div>
-                  <div className={s.overviewSub}>All deploys verified</div>
-                </div>
-                <div className={s.overviewCard}>
-                  <div className={s.overviewLabel}>AI Harmony</div>
-                  <div className={s.overviewValue}>{GLOBAL_METRICS.aiHarmony}%</div>
-                  <div className={s.overviewSub}>Cross-project coordination</div>
-                </div>
-                <div className={s.overviewCard}>
-                  <div className={s.overviewLabel}>Error Prediction Risk</div>
-                  <div className={s.overviewValue} style={{ color: '#34d399' }}>{GLOBAL_METRICS.errorPredictionRisk}%</div>
-                  <div className={s.overviewSub}>Low risk detected</div>
-                </div>
+                {[
+                  { label: 'System Health', value: `${GLOBAL_METRICS.systemHealth}%`, sub: 'Across all projects' },
+                  { label: 'Automation', value: `${GLOBAL_METRICS.automation}%`, sub: 'Hands-free operations' },
+                  { label: 'Runtime Sync', value: `${GLOBAL_METRICS.runtimeSync}%`, sub: 'Synchronization rate' },
+                  { label: 'Memory Integrity', value: `${GLOBAL_METRICS.memoryIntegrity}%`, sub: 'Shared memory core' },
+                  { label: 'Auto Recovery', value: `${GLOBAL_METRICS.autoRecovery}%`, sub: 'Self-healing uptime' },
+                  { label: 'Deploy Verification', value: `${GLOBAL_METRICS.deployVerification}%`, sub: 'All deploys verified' },
+                  { label: 'AI Harmony', value: `${GLOBAL_METRICS.aiHarmony}%`, sub: 'Cross-project coordination' },
+                  { label: 'Error Prediction Risk', value: `${GLOBAL_METRICS.errorPredictionRisk}%`, sub: 'Low risk detected', green: true },
+                ].map((m) => (
+                  <div key={m.label} className={s.overviewCard}>
+                    <div className={s.overviewLabel}>{m.label}</div>
+                    <div className={s.overviewValue} style={m.green ? { color: '#34d399' } : undefined}>{m.value}</div>
+                    <div className={s.overviewSub}>{m.sub}</div>
+                  </div>
+                ))}
               </div>
 
-              {/* Infrastructure Status */}
               <div className={s.infraRow}>
                 {Object.entries(INFRA_STATUS).map(([key, infra]) => (
                   <div key={key} className={s.infraCard}>
@@ -248,6 +262,124 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
+            </section>
+
+            {/* ===== PRODUCTION UI LOCK ===== */}
+            <section id="ui-lock">
+              <h2 className={s.controlsTitle}><span>🔒</span> Production UI Lock</h2>
+              <div className={s.lockBanner}>
+                <div className={s.lockBannerIcon}>🔒</div>
+                <div className={s.lockBannerBody}>
+                  <div className={s.lockBannerTitle}>Production Interface Locked</div>
+                  <div className={s.lockBannerSub}>
+                    resumora.net — Manifest v{ROUTE_MANIFEST.version} — {manifestRoutes.length} routes locked — Anti-regression active
+                  </div>
+                </div>
+                <div className={s.lockBannerStatus}>ENFORCED</div>
+              </div>
+
+              <div className={s.metricsGrid} style={{ marginTop: 16 }}>
+                {manifestRoutes.map(([routePath, meta]) => {
+                  const rc = routeChecks[routePath];
+                  return (
+                    <div key={routePath} className={s.metricCell}>
+                      <span className={s.metricLabel}>
+                        <code style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{routePath}</code>
+                      </span>
+                      <span className={s.metricValue}>
+                        <span className={s.metricDot} style={{ background: rc ? (rc.ok ? '#34d399' : '#ef4444') : getStatusColor(meta.status === 'locked' ? 'verified' : 'standby') }} />
+                        {rc ? (rc.ok ? `${rc.status} ✓` : `${rc.status} ✗`) : meta.status}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className={s.intelligenceGrid} style={{ marginTop: 16 }}>
+                {Object.entries(ROUTE_MANIFEST.protection).map(([key, val]) => (
+                  <div key={key} className={s.intelCard}>
+                    <div className={s.intelIcon}>{val ? '✓' : '✗'}</div>
+                    <div className={s.intelTitle}>{key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase())}</div>
+                    <div className={s.intelStatus}>
+                      <span className={s.intelStatusDot} style={{ background: val ? '#34d399' : '#ef4444' }} />
+                      {val ? 'Active' : 'Disabled'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* ===== LIVE UI PREVIEW ===== */}
+            <section id="preview">
+              <h2 className={s.controlsTitle}><span>◉</span> Live Production UI Preview</h2>
+              <div className={s.previewTabs}>
+                {PUBLIC_ROUTES.map((r) => (
+                  <button
+                    key={r}
+                    className={`${s.projectTab} ${previewRoute === r ? s.projectTabActive : ''}`}
+                    onClick={() => setPreviewRoute(r)}
+                    style={{ minWidth: 'auto', flex: '0 0 auto' }}
+                  >
+                    {r === '/' ? 'Home' : r.replace('/', '')}
+                  </button>
+                ))}
+              </div>
+              <div className={s.previewFrame}>
+                <div className={s.previewBar}>
+                  <span className={s.previewDots}><i /><i /><i /></span>
+                  <span className={s.previewUrl}>resumora.net{previewRoute}</span>
+                  <span className={s.previewLock}>🔒 Production Locked</span>
+                </div>
+                <iframe
+                  key={previewRoute}
+                  src={previewRoute}
+                  className={s.previewIframe}
+                  title={`Production preview: ${previewRoute}`}
+                />
+              </div>
+            </section>
+
+            {/* ===== PREFLIGHT SCAN ===== */}
+            <section id="preflight">
+              <h2 className={s.controlsTitle}><span>✓</span> Preflight Validation</h2>
+              <button className={s.controlBtn} onClick={runPreflight} style={{ marginBottom: 16, borderColor: 'rgba(201,168,76,0.3)' }}>
+                <span className={s.controlIcon}>◎</span>
+                {preflightResults?.running ? 'Scanning…' : 'Run Full Preflight Scan'}
+              </button>
+
+              {preflightResults && !preflightResults.running && (
+                <div className={s.activityList}>
+                  <div className={s.activityItem} style={{ borderBottom: '1px solid rgba(201,168,76,0.1)' }}>
+                    <div className={s.activityIcon} style={{ background: preflightResults.passed === preflightResults.total ? 'rgba(52,211,153,0.1)' : 'rgba(239,68,68,0.1)', borderColor: preflightResults.passed === preflightResults.total ? 'rgba(52,211,153,0.2)' : 'rgba(239,68,68,0.2)' }}>
+                      {preflightResults.passed === preflightResults.total ? '✓' : '✗'}
+                    </div>
+                    <div className={s.activityBody}>
+                      <div className={s.activityMsg}>
+                        <strong style={{ color: preflightResults.passed === preflightResults.total ? '#34d399' : '#ef4444' }}>
+                          {preflightResults.passed}/{preflightResults.total} routes verified
+                        </strong>
+                        {' — '}
+                        {preflightResults.passed === preflightResults.total ? 'All clear. Safe to deploy.' : 'Issues detected.'}
+                      </div>
+                    </div>
+                    <div className={s.activityTime}>{new Date(preflightResults.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                  {preflightResults.results.map((r) => (
+                    <div key={r.route} className={s.activityItem}>
+                      <div className={s.activityIcon} style={{ background: r.ok ? 'rgba(52,211,153,0.06)' : 'rgba(239,68,68,0.06)', borderColor: r.ok ? 'rgba(52,211,153,0.15)' : 'rgba(239,68,68,0.15)', color: r.ok ? '#34d399' : '#ef4444' }}>
+                        {r.ok ? '✓' : '✗'}
+                      </div>
+                      <div className={s.activityBody}>
+                        <div className={s.activityMsg}>
+                          <code style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#c9a84c' }}>{r.route}</code>
+                          {' → '}{r.status}{' — owner: '}{r.owner}
+                        </div>
+                      </div>
+                      <div className={s.activityTime}>{r.page}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             {/* ===== PROJECT PANELS ===== */}

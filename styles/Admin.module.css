@@ -675,6 +675,121 @@
   background: #34d399;
 }
 
+/* ===== PRODUCTION UI LOCK BANNER ===== */
+.lockBanner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.04), rgba(52, 211, 153, 0.01));
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  border-radius: 14px;
+}
+
+.lockBannerIcon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.lockBannerBody {
+  flex: 1;
+}
+
+.lockBannerTitle {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: #34d399;
+  margin-bottom: 4px;
+}
+
+.lockBannerSub {
+  font-size: 0.78rem;
+  color: #6b6763;
+}
+
+.lockBannerStatus {
+  padding: 6px 16px;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  color: #34d399;
+  flex-shrink: 0;
+}
+
+/* ===== LIVE UI PREVIEW ===== */
+.previewTabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(11, 12, 20, 0.6);
+  border: 1px solid rgba(201, 168, 76, 0.06);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+
+.previewFrame {
+  border: 1px solid rgba(201, 168, 76, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0b0c14;
+}
+
+.previewBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(11, 12, 20, 0.9);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.08);
+}
+
+.previewDots {
+  display: flex;
+  gap: 6px;
+}
+
+.previewDots i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(201, 168, 76, 0.15);
+}
+
+.previewDots i:nth-child(1) { background: #ef4444; opacity: 0.5; }
+.previewDots i:nth-child(2) { background: #f59e0b; opacity: 0.5; }
+.previewDots i:nth-child(3) { background: #34d399; opacity: 0.5; }
+
+.previewUrl {
+  flex: 1;
+  font-size: 0.78rem;
+  color: #a8a4a0;
+  font-family: monospace;
+  background: rgba(6, 7, 13, 0.5);
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(201, 168, 76, 0.06);
+}
+
+.previewLock {
+  font-size: 0.7rem;
+  color: #34d399;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.previewIframe {
+  width: 100%;
+  height: 600px;
+  border: none;
+  background: #0a0a0f;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1200px) {
   .overviewGrid {

@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "preflight": "node lib/preflight.js",
+    "validate": "npm run preflight && npm run lint && npm run build"
   },
   "dependencies": {
     "@stripe/stripe-js": "^2.4.0",
