@@ -3,7 +3,12 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
-    domains: ['resumora.net'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'resumora.net',
+      },
+    ],
   },
 };
 

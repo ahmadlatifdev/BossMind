@@ -1,6 +1,5 @@
-import Link from 'next/link';
 import SEO from '@/components/SEO';
-import homeStyles from '@/styles/Home.module.css';
+import CTASection from '@/components/CTASection';
 import styles from '@/styles/Pages.module.css';
 
 const templates = [
@@ -71,26 +70,11 @@ export default function Templates() {
               <div key={t.name} className={styles.templateCard}>
                 <div className={styles.templatePreview}>
                   <div className={styles.templateMock}>
-                    <div
-                      className={styles.templateMockLine}
-                      style={{ width: '40%', background: t.colors[0] }}
-                    />
-                    <div
-                      className={styles.templateMockLine}
-                      style={{ width: '70%', background: t.colors[1] }}
-                    />
-                    <div
-                      className={styles.templateMockLine}
-                      style={{ width: '55%', background: t.colors[1] }}
-                    />
-                    <div
-                      className={styles.templateMockLine}
-                      style={{ width: '80%', background: t.colors[2] }}
-                    />
-                    <div
-                      className={styles.templateMockLine}
-                      style={{ width: '45%', background: t.colors[1] }}
-                    />
+                    <div className={styles.templateMockLine} style={{ width: '40%', background: t.colors[0] }} />
+                    <div className={styles.templateMockLine} style={{ width: '70%', background: t.colors[1] }} />
+                    <div className={styles.templateMockLine} style={{ width: '55%', background: t.colors[1] }} />
+                    <div className={styles.templateMockLine} style={{ width: '80%', background: t.colors[2] }} />
+                    <div className={styles.templateMockLine} style={{ width: '45%', background: t.colors[1] }} />
                   </div>
                 </div>
                 <div className={styles.templateInfo}>
@@ -108,19 +92,11 @@ export default function Templates() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className={homeStyles.ctaSection}>
-        <div className={homeStyles.ctaBg} aria-hidden="true" />
-        <div className={`container ${homeStyles.ctaContent}`}>
-          <h2 className={homeStyles.ctaTitle}>Ready to Get Started?</h2>
-          <p className={homeStyles.ctaSub}>
-            Pick a template and build your resume in minutes.
-          </p>
-          <Link href="/pricing" className={homeStyles.btnPrimary}>
-            Start Building &rarr;
-          </Link>
-        </div>
-      </section>
+      <CTASection
+        title="Ready to Get Started?"
+        subtitle="Pick a template and build your resume in minutes."
+        buttonText="Start Building"
+      />
     </>
   );
 }

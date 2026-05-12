@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import SEO from '@/components/SEO';
+import CTASection from '@/components/CTASection';
+import PricingCard from '@/components/PricingCard';
+import Toast from '@/components/Toast';
 import { PLANS } from '@/lib/stripe';
 import homeStyles from '@/styles/Home.module.css';
 import styles from '@/styles/Pages.module.css';
@@ -33,30 +35,48 @@ export default function Pricing() {
   const router = useRouter();
   const [loading, setLoading] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
+  const [toast, setToast] = useState({ open: false, title: '', message: '' });
   const planEntries = Object.entries(PLANS);
 
   const success = router.query.success === 'true';
   const canceled = router.query.canceled === 'true';
 
-  async function handleCheckout(planId) {
-    if (PLANS[planId].price === 0) return;
-    setLoading(planId);
+  const closeToast = useCallback(() => setToast((t) => ({ ...t, open: false })), []);
 
+  async function handleCheckout(planKey, isFree) {
+    if (isFree) {
+      setToast({
+        open: true,
+        title: 'Welcome to Resumora!',
+        message: 'Your free account is ready. Start building your resume now.',
+      });
+      return;
+    }
+
+    setLoading(planKey);
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({ planId: planKey }),
       });
       const data = await res.json();
 
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(data.message || 'Checkout initiated (demo mode)');
+        setToast({
+          open: true,
+          title: 'Demo Mode',
+          message: data.message || `${PLANS[planKey].name} plan selected. Stripe checkout will activate once payment keys are configured.`,
+        });
       }
     } catch {
-      alert('Unable to start checkout. Please try again.');
+      setToast({
+        open: true,
+        title: 'Connection Error',
+        message: 'Unable to reach the checkout service. Please try again in a moment.',
+      });
     } finally {
       setLoading(null);
     }
@@ -69,6 +89,8 @@ export default function Pricing() {
         description="Simple, transparent pricing for Resumora. Start free, upgrade when ready. Plans for individuals and executives."
         canonical="/pricing"
       />
+
+      <Toast open={toast.open} onClose={closeToast} title={toast.title} message={toast.message} />
 
       <section className={styles.pageHero}>
         <div className={styles.pageHeroBg} aria-hidden="true" />
@@ -96,42 +118,14 @@ export default function Pricing() {
         <div className="container">
           <div className={homeStyles.pricingGrid}>
             {planEntries.map(([key, plan]) => (
-              <div
+              <PricingCard
                 key={key}
-                className={`${homeStyles.priceCard} ${plan.featured ? homeStyles.priceCardFeatured : ''}`}
-              >
-                {plan.featured && <div className={homeStyles.priceBadge}>Most Popular</div>}
-                <div className={homeStyles.priceName}>{plan.name}</div>
-                <div className={homeStyles.priceAmount}>
-                  <span className={homeStyles.priceCurrency}>$</span>
-                  {plan.price}
-                  {plan.period !== 'Free forever' && (
-                    <span className={homeStyles.pricePeriod}>{plan.period}</span>
-                  )}
-                </div>
-                <p className={homeStyles.priceDesc}>{plan.description}</p>
-                <ul className={homeStyles.priceFeatures}>
-                  {plan.features.map((feat) => (
-                    <li key={feat}>
-                      <span className={homeStyles.checkIcon} aria-hidden="true">✓</span>
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  className={`${homeStyles.priceBtn} ${
-                    plan.featured ? homeStyles.priceBtnPrimary : homeStyles.priceBtnOutline
-                  }`}
-                  onClick={() => plan.price === 0 ? null : handleCheckout(key)}
-                  disabled={loading === key}
-                >
-                  {loading === key
-                    ? 'Loading...'
-                    : plan.price === 0
-                      ? 'Start Free'
-                      : 'Subscribe Now'}
-                </button>
-              </div>
+                plan={plan}
+                planKey={key}
+                interactive
+                onCheckout={handleCheckout}
+                loading={loading}
+              />
             ))}
           </div>
         </div>
@@ -163,19 +157,12 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* Bottom CTA */}
-      <section className={homeStyles.ctaSection}>
-        <div className={homeStyles.ctaBg} aria-hidden="true" />
-        <div className={`container ${homeStyles.ctaContent}`}>
-          <h2 className={homeStyles.ctaTitle}>Start Building Today</h2>
-          <p className={homeStyles.ctaSub}>
-            No credit card required. Your next career move starts here.
-          </p>
-          <Link href="/" className={homeStyles.btnPrimary}>
-            Create Your Resume &rarr;
-          </Link>
-        </div>
-      </section>
+      <CTASection
+        title="Start Building Today"
+        subtitle="No credit card required. Your next career move starts here."
+        buttonText="Create Your Resume"
+        buttonHref="/"
+      />
     </>
   );
 }

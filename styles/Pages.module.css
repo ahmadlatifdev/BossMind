@@ -126,6 +126,10 @@
   line-height: 1.6;
 }
 
+.statsSection {
+  padding: 80px 0;
+}
+
 /* Templates Page */
 .templatesSection {
   padding: 80px 0;

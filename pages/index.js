@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import SEO from '@/components/SEO';
+import CTASection from '@/components/CTASection';
+import PricingCard from '@/components/PricingCard';
 import { PLANS } from '@/lib/stripe';
 import styles from '@/styles/Home.module.css';
 
@@ -139,37 +141,7 @@ export default function Home() {
           </p>
           <div className={styles.pricingGrid}>
             {planEntries.map(([key, plan]) => (
-              <div
-                key={key}
-                className={`${styles.priceCard} ${plan.featured ? styles.priceCardFeatured : ''}`}
-              >
-                {plan.featured && <div className={styles.priceBadge}>Most Popular</div>}
-                <div className={styles.priceName}>{plan.name}</div>
-                <div className={styles.priceAmount}>
-                  <span className={styles.priceCurrency}>$</span>
-                  {plan.price}
-                  {plan.period !== 'Free forever' && (
-                    <span className={styles.pricePeriod}>{plan.period}</span>
-                  )}
-                </div>
-                <p className={styles.priceDesc}>{plan.description}</p>
-                <ul className={styles.priceFeatures}>
-                  {plan.features.map((feat) => (
-                    <li key={feat}>
-                      <span className={styles.checkIcon} aria-hidden="true">✓</span>
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/pricing"
-                  className={`${styles.priceBtn} ${
-                    plan.featured ? styles.priceBtnPrimary : styles.priceBtnOutline
-                  }`}
-                >
-                  {plan.price === 0 ? 'Start Free' : 'Get Started'}
-                </Link>
-              </div>
+              <PricingCard key={key} plan={plan} planKey={key} />
             ))}
           </div>
         </div>
@@ -203,21 +175,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className={styles.ctaSection}>
-        <div className={styles.ctaBg} aria-hidden="true" />
-        <div className={`container ${styles.ctaContent}`}>
-          <h2 className={styles.ctaTitle}>Ready to Elevate Your Career?</h2>
-          <p className={styles.ctaSub}>
-            Join 50,000+ professionals who chose Resumora. Start building your resume today.
-          </p>
-          <Link href="/pricing" className={styles.btnPrimary}>
-            Get Started Free
-            <span aria-hidden="true">&rarr;</span>
-          </Link>
-          <p className={styles.ctaNote}>No credit card required &bull; Free plan available</p>
-        </div>
-      </section>
+      <CTASection note="No credit card required &bull; Free plan available" />
     </>
   );
 }

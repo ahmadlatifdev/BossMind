@@ -18,6 +18,11 @@ export default function Navbar() {
     setMobileOpen(false);
   }, [router.pathname]);
 
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/templates', label: 'Templates' },

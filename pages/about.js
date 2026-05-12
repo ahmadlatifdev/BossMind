@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import SEO from '@/components/SEO';
+import CTASection from '@/components/CTASection';
 import homeStyles from '@/styles/Home.module.css';
 import styles from '@/styles/Pages.module.css';
 
@@ -84,8 +84,7 @@ export default function About() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section style={{ padding: '80px 0' }}>
+      <section className={styles.statsSection}>
         <div className="container">
           <div className={homeStyles.heroStats} style={{ borderTop: 'none', paddingTop: 0 }}>
             {stats.map((s) => (
@@ -98,19 +97,10 @@ export default function About() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className={homeStyles.ctaSection}>
-        <div className={homeStyles.ctaBg} aria-hidden="true" />
-        <div className={`container ${homeStyles.ctaContent}`}>
-          <h2 className={homeStyles.ctaTitle}>Join the Resumora Community</h2>
-          <p className={homeStyles.ctaSub}>
-            Start building your professional future today.
-          </p>
-          <Link href="/pricing" className={homeStyles.btnPrimary}>
-            Get Started Free &rarr;
-          </Link>
-        </div>
-      </section>
+      <CTASection
+        title="Join the Resumora Community"
+        subtitle="Start building your professional future today."
+      />
     </>
   );
 }
