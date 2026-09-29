@@ -110,8 +110,12 @@ test("argument parser accepts a prompt after --", () => {
   assert.throws(() => parseArgs(["install", "--nope"]), /Unknown flag/);
 });
 
-test("version parser keeps the first non-empty line", () => {
+test("version parser keeps the first non-empty line and strips color", () => {
   assert.equal(parseVersion("\nAider v0.86.2\nmore"), "Aider v0.86.2");
+  assert.equal(
+    parseVersion("This is \u001b[1mmini-swe-agent\u001b[0m version \u001b[1m2.4.6\u001b[0m."),
+    "This is mini-swe-agent version 2.4.6.",
+  );
 });
 
 test("dashboard and agent API serve the catalog", async () => {

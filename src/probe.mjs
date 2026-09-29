@@ -4,7 +4,8 @@ import { updateAgentRecord, readRegistry } from "./registry.mjs";
 import { resolveBin } from "./runner.mjs";
 
 export function parseVersion(text) {
-  const line = text
+  const clean = String(text).replace(/\u001b\[[0-9;]*m/g, "");
+  const line = clean
     .split(/\r?\n/)
     .map((entry) => entry.trim())
     .find(Boolean);
