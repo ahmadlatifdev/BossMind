@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -9,7 +9,8 @@ import { AGENTS, assertCatalog, getAgent, gooseAssetName } from "../src/catalog.
 import { parseArgs } from "../src/cli.mjs";
 import { planInstall } from "../src/installer.mjs";
 import { parseVersion } from "../src/probe.mjs";
-import { buildInvocation } from "../src/runner.mjs";
+import { buildInvocation, resolveBin } from "../src/runner.mjs";
+import { npmPrefix } from "../src/paths.mjs";
 import { createApp } from "../src/server.mjs";
 
 const bin = fileURLToPath(new URL("../bin/bossmind.mjs", import.meta.url));
@@ -58,30 +59,45 @@ test("run invocations keep the prompt as one argument", () => {
   const prompt = "fix tests; rm -rf / --no-preserve-root";
   const expected = {
     aider: ["--yes-always", "--no-auto-commits", "--skip-sanity-check-repo", "--model", "ollama/qwen", "--message", prompt],
-    opencode: ["run", prompt],
-    cline: ["--yolo", "--json", "-m", "openai/gpt", prompt],
+    opencode: ["run", "--auto", "-m", "opencode/model", prompt],
+    cline: ["--json", "--auto-approve", "true", "-m", "openai/gpt", prompt],
     gemini: ["--yolo", "--model", "gemini-flash", "-p", prompt],
     codex: ["exec", "--skip-git-repo-check", prompt],
     continue: ["-p", prompt],
-    qwen: ["--yolo", "-p", prompt],
+    qwen: ["--yolo", prompt],
     openhands: ["--headless", "--json", "--exit-without-confirmation", "-t", prompt],
     "mini-swe-agent": ["--yolo", "--exit-immediately", "--model", "openai/gpt", "--task", prompt],
     goose: ["run", "--no-session", "--quiet", "--model", "claude", "-t", prompt],
   };
+  const models = {
+    aider: "ollama/qwen",
+    opencode: "opencode/model",
+    cline: "openai/gpt",
+    gemini: "gemini-flash",
+    "mini-swe-agent": "openai/gpt",
+    goose: "claude",
+  };
   for (const agent of AGENTS) {
-    const model = expected[agent.id].includes(agent.invoke.modelFlag) ? (
-      agent.id === "aider" ? "ollama/qwen" :
-      agent.id === "cline" ? "openai/gpt" :
-      agent.id === "gemini" ? "gemini-flash" :
-      agent.id === "mini-swe-agent" ? "openai/gpt" :
-      agent.id === "goose" ? "claude" : undefined
-    ) : undefined;
-    const invocation = buildInvocation(agent, { prompt, model });
+    const invocation = buildInvocation(agent, { prompt, model: models[agent.id] });
     assert.deepEqual(invocation.args, expected[agent.id], agent.id);
     assert.equal(invocation.args.filter((arg) => arg === prompt).length, 1);
   }
   assert.throws(() => buildInvocation(getAgent("aider"), { prompt: "   " }), /prompt/);
-  assert.throws(() => buildInvocation(getAgent("opencode"), { prompt: "hi", model: "x" }), /model override/);
+  assert.throws(() => buildInvocation(getAgent("continue"), { prompt: "hi", model: "x" }), /model override/);
+});
+
+test("npm agents resolve from package.json when the .bin shim is missing", async () => {
+  const cwd = await mkdtemp(path.join(tmpdir(), "bossmind-bin-"));
+  const script = path.join(npmPrefix(cwd, "cline"), "node_modules", "cline", "bin", "cline");
+  await mkdir(path.dirname(script), { recursive: true });
+  await writeFile(
+    path.join(path.dirname(script), "..", "package.json"),
+    JSON.stringify({ name: "cline", bin: { cline: "./bin/cline" } }),
+  );
+  await writeFile(script, "#!/bin/sh\necho ok\n");
+  await chmod(script, 0o755);
+  assert.equal(await resolveBin(getAgent("cline"), cwd), script);
+  await rm(cwd, { recursive: true, force: true });
 });
 
 test("argument parser accepts a prompt after --", () => {

@@ -16,6 +16,7 @@ export function runCommand(cmd, args, options = {}) {
       env,
       stdio: [stdin, "pipe", "pipe"],
       windowsHide: true,
+      detached: process.platform !== "win32",
     });
 
     let settled = false;
@@ -30,9 +31,21 @@ export function runCommand(cmd, args, options = {}) {
       handler();
     };
 
+    const stopChild = () => {
+      if (process.platform !== "win32") {
+        try {
+          process.kill(-child.pid, "SIGTERM");
+          return;
+        } catch {
+          // The process group is already gone.
+        }
+      }
+      child.kill("SIGTERM");
+    };
+
     if (timeoutMs > 0) {
       timer = setTimeout(() => {
-        child.kill("SIGTERM");
+        stopChild();
         finish(() => {
           reject(new Error(`Timed out after ${timeoutMs}ms: ${cmd} ${args.join(" ")}`));
         });

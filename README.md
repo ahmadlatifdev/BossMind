@@ -39,12 +39,15 @@ node bin/bossmind.mjs serve
 
 Installs go to `.bossmind/runtime/`. That directory is gitignored. Status is stored in `.bossmind/registry.json`.
 
+`run` starts the selected agent even when no model key is configured. The agent then exits with its own authentication or configuration error. Aider, if no key is set, may open a browser to connect one.
+
 Each `run` uses that agent's own headless command:
 
 - Aider: `--yes-always --no-auto-commits --message`
-- OpenCode: `run`
-- Cline: `--yolo --json`
-- Gemini CLI and Qwen Code: `--yolo -p`
+- OpenCode: `run --auto`
+- Cline: `--json --auto-approve true`
+- Gemini CLI: `--yolo -p`
+- Qwen Code: `--yolo` plus the positional prompt
 - Codex CLI: `exec --skip-git-repo-check`
 - Continue: `-p`
 - OpenHands: `--headless --json -t`

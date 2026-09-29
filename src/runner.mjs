@@ -1,5 +1,6 @@
-import { access } from "node:fs/promises";
+import { access, readFile, readdir } from "node:fs/promises";
 import { constants } from "node:fs";
+import path from "node:path";
 import { getAgent } from "./catalog.mjs";
 import { npmBin, npmPrefix, releaseDir, venvBin, venvPath } from "./paths.mjs";
 import { mergeEnv, runCommand } from "./proc.mjs";
@@ -49,9 +50,55 @@ export async function resolveBin(agent, cwd) {
   const local = expectedBin(agent, cwd);
   if (local && (await fileExists(local))) return local;
 
+  if (agent.install.kind === "npm") {
+    const fromPackage = await findNpmPackageBin(npmPrefix(cwd, agent.id), agent.bin);
+    if (fromPackage) return fromPackage;
+  }
+
   if (agent.install.kind === "github-release") {
     const found = await findNamedBinary(releaseDir(cwd, agent.id), agent.bin);
     if (found) return found;
+  }
+  return null;
+}
+
+async function findNpmPackageBin(prefix, binName) {
+  const modules = path.join(prefix, "node_modules");
+  let entries;
+  try {
+    entries = await readdir(modules, { withFileTypes: true });
+  } catch {
+    return null;
+  }
+  const packages = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
+    if (entry.name.startsWith("@")) {
+      const scoped = path.join(modules, entry.name);
+      let children;
+      try {
+        children = await readdir(scoped, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+      for (const child of children) {
+        if (child.isDirectory()) packages.push(path.join(scoped, child.name, "package.json"));
+      }
+    } else {
+      packages.push(path.join(modules, entry.name, "package.json"));
+    }
+  }
+  for (const file of packages) {
+    let pkg;
+    try {
+      pkg = JSON.parse(await readFile(file, "utf8"));
+    } catch {
+      continue;
+    }
+    const bins = typeof pkg.bin === "string" ? { [pkg.name]: pkg.bin } : pkg.bin;
+    if (!bins || !bins[binName]) continue;
+    const target = path.resolve(path.dirname(file), bins[binName]);
+    if (await fileExists(target)) return target;
   }
   return null;
 }

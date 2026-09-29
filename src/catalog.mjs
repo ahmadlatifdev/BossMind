@@ -32,7 +32,8 @@ export const AGENTS = [
     auth: "Run `opencode auth` or configure a provider. The CLI itself is MIT licensed.",
     install: { kind: "npm", spec: "opencode-ai@1.18.33" },
     invoke: {
-      argsBefore: ["run"],
+      argsBefore: ["run", "--auto"],
+      modelFlag: "-m",
     },
   },
   {
@@ -47,7 +48,7 @@ export const AGENTS = [
     auth: "`cline auth`, or a provider API key (Anthropic, OpenAI, Gemini, OpenRouter, and others).",
     install: { kind: "npm", spec: "cline@3.0.65" },
     invoke: {
-      argsBefore: ["--yolo", "--json"],
+      argsBefore: ["--json", "--auto-approve", "true"],
       modelFlag: "-m",
     },
   },
@@ -112,7 +113,6 @@ export const AGENTS = [
     install: { kind: "npm", spec: "@qwen-code/qwen-code@0.24.7" },
     invoke: {
       argsBefore: ["--yolo"],
-      promptFlag: "-p",
       modelFlag: "--model",
     },
   },
@@ -140,7 +140,7 @@ export const AGENTS = [
     homepage: "https://mini-swe-agent.com",
     summary: "Small software-engineering agent with a transparent tool loop.",
     bin: "mini",
-    versionArgs: ["--version"],
+    versionArgs: ["--help"],
     auth: "A model via --model (LiteLLM names) or a mini-swe-agent config file.",
     install: { kind: "pip", spec: "mini-swe-agent==2.4.6" },
     invoke: {
