@@ -75,7 +75,7 @@ Installs go to `.bossmind/runtime/`. That directory is gitignored. Status is sto
 
 Each `run` uses that agent's own headless command:
 
-- Aider: `--yes-always --no-auto-commits --message`
+- Aider: `--yes-always --no-auto-commits --exit --no-browser --message`
 - OpenCode: `run --auto`
 - Cline: `--json --auto-approve true`
 - Gemini CLI: `--yolo -p`

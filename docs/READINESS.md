@@ -112,6 +112,12 @@ No agent has a key in the repo. Paid keys are optional.
 | Isolated repository tasks | OpenHands, mini-swe-agent |
 | After provider configuration | Goose, Cline |
 
+## Live local check
+
+Ollama is the configured free provider. The model name `qwen2.5-coder` is the 1.5b weights, which fit this machine. Aider 0.86.2 was installed into `.bossmind/runtime` and is not committed.
+
+The harmless task was: read a temporary README and reply with one sentence, without modifying files. Aider exited 0. Its reply was the sentence in that README. The file hash did not change. The output did not contain a push, a secret, or a Firebase, DNS, Stripe, or Neon command. Aider added an untracked `.gitignore` in that temporary repo only.
+
 ## Whether PR #3 is safe to merge
 
 No. Not by itself.

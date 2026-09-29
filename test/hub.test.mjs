@@ -58,7 +58,7 @@ test("install plans shell out with argv arrays and pinned specs", () => {
 test("run invocations keep the prompt as one argument", () => {
   const prompt = "fix tests; rm -rf / --no-preserve-root";
   const expected = {
-    aider: ["--yes-always", "--no-auto-commits", "--skip-sanity-check-repo", "--model", "ollama/qwen", "--message", prompt],
+    aider: ["--yes-always", "--no-auto-commits", "--skip-sanity-check-repo", "--exit", "--no-browser", "--disable-playwright", "--model", "ollama/qwen", "--message", prompt],
     opencode: ["run", "--auto", "-m", "opencode/model", prompt],
     cline: ["--json", "--auto-approve", "true", "-m", "openai/gpt", prompt],
     gemini: ["--yolo", "--model", "gemini-flash", "-p", prompt],

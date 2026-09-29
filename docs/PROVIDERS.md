@@ -13,7 +13,7 @@ node bin/bossmind.mjs run opencode --local -- "Explain the install path"
 node bin/bossmind.mjs run mini-swe-agent --local -- "Fix the failing test in this repo"
 ```
 
-`--local` selects `ollama/qwen2.5-coder` for Aider, OpenCode, and mini-swe-agent. For Goose it sets `GOOSE_PROVIDER=ollama` and `GOOSE_MODEL=qwen2.5-coder` in that process only. For Cline it passes the same Ollama model. Those two stay blocked until this flag or a real provider configuration is present.
+`--local` selects `ollama/qwen2.5-coder` for Aider, OpenCode, and mini-swe-agent. For Aider it also points `OLLAMA_API_BASE` at `http://127.0.0.1:11434` for that process only. For Goose it sets `GOOSE_PROVIDER=ollama` and `GOOSE_MODEL=qwen2.5-coder` in that process only. For Cline it passes the same Ollama model. Those two stay blocked until this flag or a real provider configuration is present.
 
 Gemini CLI, Qwen Code, Codex CLI, Continue CLI, and OpenHands have no free local mapping in this hub. `--local` refuses them instead of guessing a paid model.
 

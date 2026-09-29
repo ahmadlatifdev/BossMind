@@ -14,7 +14,7 @@ export const LOCAL_PROVIDER = {
 };
 
 export const LOCAL_INVOCATIONS = {
-  aider: { model: "ollama/qwen2.5-coder" },
+  aider: { model: "ollama/qwen2.5-coder", env: { OLLAMA_API_BASE: "http://127.0.0.1:11434" } },
   opencode: { model: "ollama/qwen2.5-coder" },
   "mini-swe-agent": { model: "ollama/qwen2.5-coder" },
   cline: { model: "ollama/qwen2.5-coder" },

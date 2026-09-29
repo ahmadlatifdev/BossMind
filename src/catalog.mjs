@@ -15,7 +15,7 @@ export const AGENTS = [
     auth: "OPENAI_API_KEY, ANTHROPIC_API_KEY, or --model for another provider (including Ollama).",
     install: { kind: "pip", spec: "aider-chat==0.86.2" },
     invoke: {
-      argsBefore: ["--yes-always", "--no-auto-commits", "--skip-sanity-check-repo"],
+      argsBefore: ["--yes-always", "--no-auto-commits", "--skip-sanity-check-repo", "--exit", "--no-browser", "--disable-playwright"],
       promptFlag: "--message",
       modelFlag: "--model",
     },
