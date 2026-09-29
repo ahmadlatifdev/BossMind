@@ -5,3 +5,7 @@ export { listAgents, probeAgent, probeAll, parseVersion } from "./probe.mjs";
 export { readRegistry, writeRegistry } from "./registry.mjs";
 export { createApp, listen } from "./server.mjs";
 export { parseArgs, main } from "./cli.mjs";
+export { assertProviderPlan, localInvocation, providerConfigStatus, providerPlan } from "./providers.mjs";
+export { assertRouting, chooseAgent, routeForAgent, ROUTES } from "./routing.mjs";
+export { inspectPrompt, redactSecrets, SAFETY_LIMITS } from "./safety.mjs";
+export { decide } from "./sandbox-shim.mjs";

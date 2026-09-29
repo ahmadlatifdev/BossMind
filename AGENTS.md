@@ -7,4 +7,6 @@ This repo is the BossMind hub for free open-source coding agents.
 - `node bin/bossmind.mjs status` checks that each installed binary responds.
 - `node bin/bossmind.mjs serve` serves the dashboard on http://127.0.0.1:8787.
 
-Node 20+ is required. Python 3 with `venv` is required for the pip-installed agents. Do not commit `.bossmind/runtime` or `.bossmind/registry.json`.
+Node 20+ is required. Python 3 with `venv` is required for the pip-installed agents. Do not commit `.bossmind/runtime`, `.bossmind/registry.json`, `.env`, API keys, or installed agent binaries.
+
+`bossmind run` blocks project deletion, secret printing, git push, and unapproved Firebase, DNS, Stripe, or Neon changes. Prefer `bossmind run <id> --local` with Ollama. Goose and Cline stay disabled until a provider is configured.

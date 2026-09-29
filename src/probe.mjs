@@ -1,6 +1,8 @@
 import { getAgent, AGENTS } from "./catalog.mjs";
+import { providerConfigStatus } from "./providers.mjs";
 import { runCommand } from "./proc.mjs";
 import { updateAgentRecord, readRegistry } from "./registry.mjs";
+import { routeForAgent } from "./routing.mjs";
 import { resolveBin } from "./runner.mjs";
 
 export function parseVersion(text) {
@@ -59,6 +61,8 @@ export async function listAgents(cwd) {
   const registry = await readRegistry(cwd);
   return AGENTS.map((agent) => {
     const record = registry.agents[agent.id] || {};
+    const route = routeForAgent(agent.id);
+    const provider = providerConfigStatus(agent.id, process.env);
     return {
       id: agent.id,
       name: agent.name,
@@ -69,6 +73,10 @@ export async function listAgents(cwd) {
       bin: agent.bin,
       auth: agent.auth,
       install: publicInstall(agent),
+      route: route?.id || null,
+      routeSummary: route?.summary || null,
+      providerGated: Boolean(route?.requiresProviderConfig),
+      providerReady: provider.ready,
       status: record.status || "not-installed",
       version: record.version || null,
       binPath: record.binPath || null,

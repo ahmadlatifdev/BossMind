@@ -27,7 +27,8 @@
       color: var(--ink);
     }
     main { max-width: 1100px; margin: 0 auto; padding: 40px 20px 64px; }
-    header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; }
+    header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; flex-wrap: wrap; }
+    .table-wrap { width: 100%; overflow-x: auto; }
     h1 { font-size: 42px; line-height: 0.95; margin: 0 0 8px; letter-spacing: -0.03em; }
     p { color: var(--muted); margin: 0; max-width: 62ch; }
     button, .ghost {
@@ -69,20 +70,24 @@
       <span id="count">Loading catalog…</span>
       <span id="when"></span>
     </div>
+    <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>AGENT</th>
           <th>STATUS</th>
           <th>PIN</th>
+          <th>ROUTE</th>
           <th>AUTH</th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
     </table>
+    </div>
     <footer>
       Install from the repo root with <code>node bin/bossmind.mjs install --all</code>.
-      The clients are free and open source. A model provider or a local model is still required to run a task.
+      The clients are free and open source. Prefer a local Ollama model. Paid API keys stay optional and are never stored here.
+      Runs refuse project deletion, secret printing, git push, and Firebase, DNS, Stripe, or Neon changes unless you approve them.
     </footer>
   </main>
   <script>
@@ -119,7 +124,10 @@
         const status = cell("td", agent.version ? `${agent.status} · ${agent.version}` : agent.status);
         status.className = `status ${agent.status}`;
         const pin = agent.install.spec || `${agent.install.repo}@${agent.install.version}`;
-        tr.append(name, status, cell("td", pin), cell("td", agent.auth));
+        const route = agent.providerGated && !agent.providerReady
+          ? `${agent.route} · needs provider`
+          : (agent.route || "");
+        tr.append(name, status, cell("td", pin), cell("td", route), cell("td", agent.auth));
         rows.append(tr);
       }
     }

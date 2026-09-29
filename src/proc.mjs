@@ -71,8 +71,8 @@ export function runCommand(cmd, args, options = {}) {
   });
 }
 
-export function mergeEnv(defaults = {}) {
-  const env = { ...process.env };
+export function mergeEnv(defaults = {}, base = process.env) {
+  const env = { ...base };
   for (const [key, value] of Object.entries(defaults)) {
     if (!env[key]) env[key] = value;
   }

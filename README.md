@@ -35,7 +35,39 @@ node bin/bossmind.mjs run aider --model ollama/qwen2.5-coder -- "Add a failing t
 node bin/bossmind.mjs serve
 ```
 
-`serve` opens http://127.0.0.1:8787 and lists the catalog, pin, license, and last probe.
+`serve` opens http://127.0.0.1:8787 and lists the catalog, pin, license, route, and last probe.
+
+## Safety
+
+`bossmind run` refuses destructive deletion, secret printing, and `git push`. Firebase, DNS, Stripe, and Neon changes need `--approve-protected`. The working directory cannot be the filesystem root or `.bossmind/runtime`. Shell `rm`, `git`, and those service CLIs are intercepted for the run. See [docs/SAFETY.md](docs/SAFETY.md).
+
+## Providers
+
+Local Ollama is the default. Paid keys are optional and are never written into the repo.
+
+```bash
+ollama pull qwen2.5-coder
+node bin/bossmind.mjs run aider --local -- "Add a failing test, then make it pass"
+node bin/bossmind.mjs providers
+```
+
+See [docs/PROVIDERS.md](docs/PROVIDERS.md).
+
+## Routing
+
+| Task | Agents |
+| --- | --- |
+| Code patches | Aider, OpenCode |
+| Review and explanation | Gemini CLI, Qwen Code |
+| Code reasoning | Codex CLI, Continue CLI |
+| Isolated repository tasks | OpenHands, mini-swe-agent |
+| After provider configuration | Goose, Cline |
+
+```bash
+node bin/bossmind.mjs route
+```
+
+See [docs/ROUTING.md](docs/ROUTING.md). The readiness review is in [docs/READINESS.md](docs/READINESS.md).
 
 Installs go to `.bossmind/runtime/`. That directory is gitignored. Status is stored in `.bossmind/registry.json`.
 

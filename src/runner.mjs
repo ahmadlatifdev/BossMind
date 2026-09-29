@@ -2,9 +2,12 @@ import { access, readFile, readdir } from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
 import { getAgent } from "./catalog.mjs";
-import { npmBin, npmPrefix, releaseDir, venvBin, venvPath } from "./paths.mjs";
+import { hubRoot, npmBin, npmPrefix, releaseDir, venvBin, venvPath } from "./paths.mjs";
+import { localInvocation, providerConfigStatus } from "./providers.mjs";
 import { mergeEnv, runCommand } from "./proc.mjs";
 import { readRegistry } from "./registry.mjs";
+import { applySandboxEnv, createSandbox } from "./sandbox.mjs";
+import { assertSafeCwd, createStreamRedactor, inspectPrompt, redactSecrets } from "./safety.mjs";
 
 export function buildInvocation(agent, { prompt, model } = {}) {
   const text = typeof prompt === "string" ? prompt.trim() : "";
@@ -126,8 +129,42 @@ async function findNamedBinary(dir, name) {
 
 export async function runAgent(id, options) {
   const agent = getAgent(id);
-  const cwd = options.cwd || process.cwd();
-  const invocation = buildInvocation(agent, options);
+  const cwd = assertSafeCwd(options.cwd || process.cwd());
+  const decision = inspectPrompt(options.prompt, { approveProtected: options.approveProtected });
+  if (!decision.ok) {
+    const error = new Error(decision.message);
+    error.code = "UNSAFE_RUN";
+    error.violations = decision.violations;
+    throw error;
+  }
+
+  let model = options.model;
+  let localEnv = {};
+  if (options.local) {
+    const local = localInvocation(agent.id);
+    if (!local) {
+      const error = new Error(
+        `${agent.name} has no free local model in this hub. Refusing to fall back to a paid provider.`,
+      );
+      error.code = "NO_LOCAL_MODEL";
+      throw error;
+    }
+    model = model || local.model;
+    localEnv = local.env || {};
+  }
+
+  const baseEnv = options.env || process.env;
+  const providerEnv = { ...baseEnv, ...localEnv };
+  const provider = providerConfigStatus(agent.id, providerEnv, { model, local: options.local });
+  if (!provider.ready) {
+    const error = new Error(
+      `${agent.name} needs provider configuration before it can run. Missing: ${provider.missing.join(", ")}. Use --local for Ollama, or set those variables yourself. BossMind does not supply a key.`,
+    );
+    error.code = "PROVIDER_REQUIRED";
+    throw error;
+  }
+
+  const invocation = buildInvocation(agent, { ...options, prompt: options.prompt, model });
   const binPath = options.binPath || (await resolveBin(agent, options.projectRoot || cwd));
   if (!binPath) {
     const error = new Error(
@@ -136,12 +173,39 @@ export async function runAgent(id, options) {
     error.code = "NOT_INSTALLED";
     throw error;
   }
-  const result = await runCommand(binPath, invocation.args, {
-    cwd,
-    env: mergeEnv(invocation.env),
-    timeoutMs: options.timeoutMs || 0,
-    onStdout: options.onStdout,
-    onStderr: options.onStderr,
+
+  const sandbox = await createSandbox({
+    projectRoot: cwd,
+    hubRoot: options.hubRoot || hubRoot(),
+    approveProtected: options.approveProtected,
   });
-  return { agent, binPath, ...invocation, ...result };
+  const env = applySandboxEnv(mergeEnv({ ...invocation.env, ...localEnv }, baseEnv), sandbox);
+  const stdout = createStreamRedactor(env, (chunk) => options.onStdout?.(chunk));
+  const stderr = createStreamRedactor(env, (chunk) => options.onStderr?.(chunk));
+  try {
+    const result = await runCommand(binPath, invocation.args, {
+      cwd,
+      env,
+      timeoutMs: options.timeoutMs || 0,
+      onStdout: (chunk) => stdout.push(chunk),
+      onStderr: (chunk) => stderr.push(chunk),
+    });
+    stdout.flush();
+    stderr.flush();
+    return {
+      agent,
+      binPath,
+      ...invocation,
+      ...result,
+      stdout: redactSecrets(result.stdout, env),
+      stderr: redactSecrets(result.stderr, env),
+    };
+  } catch (error) {
+    stdout.flush();
+    stderr.flush();
+    error.message = redactSecrets(error.message, env);
+    throw error;
+  } finally {
+    await sandbox.cleanup();
+  }
 }
