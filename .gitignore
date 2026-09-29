@@ -1,0 +1,5 @@
+node_modules/
+.bossmind/runtime/
+.bossmind/registry.json
+.env
+*.log

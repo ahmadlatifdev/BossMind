@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BossMind agent hub</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #14160f;
+      --bg-2: #1c1f16;
+      --ink: #f3efe2;
+      --muted: #b7b09a;
+      --line: #343828;
+      --amber: #e2a53a;
+      --ok: #b6d36a;
+      --bad: #e07a5f;
+      --wait: #8d907f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+      background:
+        radial-gradient(1200px 500px at 10% -10%, rgba(226, 165, 58, 0.16), transparent 55%),
+        var(--bg);
+      color: var(--ink);
+    }
+    main { max-width: 1100px; margin: 0 auto; padding: 40px 20px 64px; }
+    header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; }
+    h1 { font-size: 42px; line-height: 0.95; margin: 0 0 8px; letter-spacing: -0.03em; }
+    p { color: var(--muted); margin: 0; max-width: 62ch; }
+    button, .ghost {
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      background: var(--amber);
+      color: #1a1408;
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: progress; }
+    .meta { margin: 28px 0 18px; display: flex; gap: 18px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; background: rgba(28, 31, 22, 0.88); }
+    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+    td strong { display: block; font-size: 16px; }
+    .summary { color: var(--muted); margin-top: 4px; }
+    .status { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .installed { color: var(--ok); }
+    .failed, .broken { color: var(--bad); }
+    .not-installed { color: var(--wait); }
+    a { color: var(--amber); }
+    footer { margin-top: 22px; color: var(--muted); font-size: 14px; }
+    code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>BossMind<br />agent hub</h1>
+        <p>Free open-source coding agents, installed into one runtime and called through one command.</p>
+      </div>
+      <button id="probe" type="button">Probe binaries</button>
+    </header>
+    <div class="meta">
+      <span id="count">Loading catalog…</span>
+      <span id="when"></span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>AGENT</th>
+          <th>STATUS</th>
+          <th>PIN</th>
+          <th>AUTH</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <footer>
+      Install from the repo root with <code>node bin/bossmind.mjs install --all</code>.
+      The clients are free and open source. A model provider or a local model is still required to run a task.
+    </footer>
+  </main>
+  <script>
+    const rows = document.querySelector("#rows");
+    const count = document.querySelector("#count");
+    const when = document.querySelector("#when");
+    const probe = document.querySelector("#probe");
+
+    function cell(tag, text) {
+      const el = document.createElement(tag);
+      el.textContent = text;
+      return el;
+    }
+
+    function render(agents) {
+      rows.replaceChildren();
+      const installed = agents.filter((agent) => agent.status === "installed").length;
+      count.textContent = `${installed} installed · ${agents.length} in the catalog`;
+      when.textContent = new Date().toLocaleString();
+      for (const agent of agents) {
+        const tr = document.createElement("tr");
+        const name = document.createElement("td");
+        const title = document.createElement("strong");
+        title.textContent = agent.name;
+        const summary = document.createElement("div");
+        summary.className = "summary";
+        summary.textContent = `${agent.summary} ${agent.license}.`;
+        const link = document.createElement("a");
+        link.href = agent.repo;
+        link.textContent = agent.repo.replace("https://github.com/", "");
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        name.append(title, summary, link);
+        const status = cell("td", agent.version ? `${agent.status} · ${agent.version}` : agent.status);
+        status.className = `status ${agent.status}`;
+        const pin = agent.install.spec || `${agent.install.repo}@${agent.install.version}`;
+        tr.append(name, status, cell("td", pin), cell("td", agent.auth));
+        rows.append(tr);
+      }
+    }
+
+    async function load(url, options) {
+      probe.disabled = true;
+      try {
+        const response = await fetch(url, options);
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || response.statusText);
+        render(body.agents);
+      } catch (error) {
+        count.textContent = error.message;
+      } finally {
+        probe.disabled = false;
+      }
+    }
+
+    probe.addEventListener("click", () => load("/api/probe", { method: "POST" }));
+    load("/api/agents");
+  </script>
+</body>
+</html>
