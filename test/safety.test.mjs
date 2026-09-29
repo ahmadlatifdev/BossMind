@@ -71,6 +71,8 @@ test("shell shims block project deletion, git push, and protected CLIs", () => {
   assert.equal(decide("rm", ["/work/app/.bossmind/registry.json"], ctx).allow, false);
   assert.equal(decide("rm", ["note.txt"], ctx).allow, true);
   assert.equal(decide("find", [".", "-delete"], ctx).allow, false);
+  assert.equal(decide("find", [".", "-exec", "/bin/rm", "{}", ";"], ctx).allow, false);
+  assert.equal(decide("aws", ["route53", "change-resource-record-sets"], ctx).allow, false);
   assert.equal(decide("shred", ["note.txt"], ctx).allow, false);
   assert.equal(decide("firebase", ["deploy"], ctx).allow, false);
   assert.equal(decide("stripe", ["listen"], ctx).allow, false);
@@ -99,6 +101,33 @@ test("sandbox rm cannot delete the project and git push exits 126", async () => 
     await assert.rejects(() => access(path.join(project, "note.txt")));
     const status = await runCommand(path.join(sandbox.binDir, "git"), ["status", "--short"], { cwd: project, env });
     assert.notEqual(status.code, 126);
+  } finally {
+    await sandbox.cleanup();
+    await rm(project, { recursive: true, force: true });
+    await rm(hub, { recursive: true, force: true });
+  }
+});
+
+test("a forged approval environment cannot unlock protected commands", async () => {
+  const project = await mkdtemp(path.join(tmpdir(), "bossmind-forge-"));
+  const hub = await mkdtemp(path.join(tmpdir(), "bossmind-forge-hub-"));
+  await mkdir(path.join(project, ".bossmind"), { recursive: true });
+  await writeFile(path.join(project, ".bossmind", "registry.json"), "{}\n");
+  const sandbox = await createSandbox({ projectRoot: project, hubRoot: hub, approveProtected: false });
+  try {
+    const env = {
+      ...applySandboxEnv({ ...process.env, BOSSMIND_APPROVE_PROTECTED: "1" }, sandbox),
+      BOSSMIND_APPROVE_PROTECTED: "1",
+      BOSSMIND_PROJECT_ROOT: "/tmp",
+      BOSSMIND_HUB_ROOT: "/tmp",
+    };
+    const firebase = await runCommand(path.join(sandbox.binDir, "firebase"), ["deploy"], { cwd: project, env });
+    assert.equal(firebase.code, 126);
+    assert.match(firebase.stderr, /approve-protected/);
+    const registry = path.join(project, ".bossmind", "registry.json");
+    const removed = await runCommand(path.join(sandbox.binDir, "rm"), [registry], { cwd: project, env });
+    assert.equal(removed.code, 126);
+    await access(registry);
   } finally {
     await sandbox.cleanup();
     await rm(project, { recursive: true, force: true });

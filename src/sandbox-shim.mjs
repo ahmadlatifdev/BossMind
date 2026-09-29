@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
 import { constants } from "node:fs";
-import { accessSync } from "node:fs";
+import { accessSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const GIT_OPTIONS_WITH_VALUE = new Set([
   "-C",
@@ -27,6 +27,9 @@ export function decide(command, args, ctx) {
     if (!ctx.approveProtected) return deny(`${name} changes require --approve-protected.`);
   }
   if (name === "gcloud" && args.includes("dns") && !ctx.approveProtected) {
+    return deny("DNS changes require --approve-protected.");
+  }
+  if (name === "aws" && args.includes("route53") && !ctx.approveProtected) {
     return deny("DNS changes require --approve-protected.");
   }
   return { allow: true };
@@ -55,7 +58,7 @@ function decideRm(args, ctx) {
 function decideFind(args) {
   if (args.includes("-delete")) return deny("find -delete is blocked.");
   for (let i = 0; i < args.length; i += 1) {
-    if ((args[i] === "-exec" || args[i] === "-execdir" || args[i] === "-ok") && args[i + 1] === "rm") {
+    if ((args[i] === "-exec" || args[i] === "-execdir" || args[i] === "-ok") && isRmExecutable(args[i + 1])) {
       return deny("find -exec rm is blocked.");
     }
   }
@@ -104,6 +107,22 @@ function deny(message) {
   return { allow: false, message: `BossMind safety: ${message}` };
 }
 
+function isRmExecutable(token) {
+  if (!token) return false;
+  return path.basename(token) === "rm";
+}
+
+function loadPolicy() {
+  const file = path.join(path.dirname(fileURLToPath(import.meta.url)), "policy.json");
+  const policy = JSON.parse(readFileSync(file, "utf8"));
+  return {
+    cwd: process.cwd(),
+    projectRoot: policy.projectRoot,
+    hubRoot: policy.hubRoot,
+    approveProtected: policy.approveProtected === true,
+  };
+}
+
 function realBinary(name, sandboxBin) {
   const dirs = (process.env.PATH || "")
     .split(path.delimiter)
@@ -120,24 +139,15 @@ function realBinary(name, sandboxBin) {
   return null;
 }
 
-function contextFromEnv() {
-  return {
-    cwd: process.cwd(),
-    projectRoot: process.env.BOSSMIND_PROJECT_ROOT,
-    hubRoot: process.env.BOSSMIND_HUB_ROOT,
-    approveProtected: process.env.BOSSMIND_APPROVE_PROTECTED === "1",
-  };
-}
-
 function main() {
   const command = path.basename(process.argv[1] || "");
   const args = process.argv.slice(2);
-  const decision = decide(command, args, contextFromEnv());
+  const decision = decide(command, args, loadPolicy());
   if (!decision.allow) {
     process.stderr.write(`${decision.message}\n`);
     process.exit(126);
   }
-  const sandboxBin = process.env.BOSSMIND_SANDBOX_BIN;
+  const sandboxBin = path.dirname(process.argv[1] || "");
   const real = realBinary(command, sandboxBin);
   if (!real) {
     process.stderr.write(`BossMind safety: ${command} is not available outside the sandbox.\n`);

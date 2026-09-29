@@ -118,4 +118,4 @@ No. Not by itself.
 
 Merge this activation into `cursor/oss-coding-agents-6094` first. After that, PR #3 is safe to merge. The combined tree has a clean secret scan, an ignored runtime, matching licenses, no committed agent binaries, and `bossmind run` limits for deletion, secret printing, git push, and unapproved Firebase, DNS, Stripe, and Neon changes.
 
-Residual limit, also written in `docs/SAFETY.md`: the shell shim is first on `PATH`. A coding agent can still edit files inside the selected project, which is its job. A direct `/usr/bin/git push` or an in-process delete can bypass the shim. The prompt gate refuses those requests before the agent starts.
+Residual limit, also written in `docs/SAFETY.md`: the shell shim is first on `PATH`. A coding agent can still edit files inside the selected project, which is its job. A direct `/usr/bin/git push` or an in-process delete can bypass the shim. The prompt gate refuses those requests before the agent starts. Approval for Firebase, DNS, Stripe, and Neon is read from the shim policy file. An agent cannot grant it by setting `BOSSMIND_APPROVE_PROTECTED`.
